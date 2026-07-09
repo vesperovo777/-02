@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运营第02节 · 开关馆流程 & 场地日常运维</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Oswald:wght@400;600;700&family=Roboto+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #161616;
+    --bg4: #1c1c1c;
+    --red: #e8271a;
+    --red2: #ff3d2e;
+    --red-dim: #7a1208;
+    --red-glow: rgba(232,39,26,0.13);
+    --red-glow2: rgba(232,39,26,0.07);
+    --white: #f0f0f0;
+    --white2: #c8c8c8;
+    --white3: #888;
+    --gold: #d4a853;
+    --gold-dim: #7a5e28;
+    --blue: #4ab3e8;
+    --blue-glow: rgba(74,179,232,0.1);
+    --green: #7bc67e;
+    --green-glow: rgba(123,198,126,0.1);
+    --border: rgba(232,39,26,0.2);
+    --border2: rgba(255,255,255,0.06);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--bg);
+    color:var(--white);
+    font-family:'Noto Sans SC',sans-serif;
+    font-size:15px; line-height:1.7; overflow-x:hidden;
+  }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar { position:fixed; top:0; left:0; right:0; z-index:1000; height:3px; background:rgba(255,255,255,0.05); }
+  #progress-fill { height:100%; background:linear-gradient(90deg,var(--red),var(--red2)); width:0%; transition:width 0.1s; box-shadow:0 0 8px var(--red); }
+  #progress-label { position:fixed; top:8px; right:16px; z-index:1001; font-family:'Roboto Mono',monospace; font-size:10px; color:var(--white3); letter-spacing:1px; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height:100vh; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; text-align:center;
+    padding:80px 24px 60px;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(232,39,26,0.12) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.015) 60px, rgba(255,255,255,0.015) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.015) 60px, rgba(255,255,255,0.015) 61px),
+      var(--bg);
+    position:relative; overflow:hidden;
+  }
+  .hero::before { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--red),transparent); }
+
+  .stage-badge { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:4px; color:var(--red); text-transform:uppercase; margin-bottom:20px; border:1px solid var(--border); padding:6px 20px; border-radius:2px; background:var(--red-glow2); }
+
+  .hero h1 { font-family:'Oswald',sans-serif; font-size:clamp(36px,8vw,78px); font-weight:700; line-height:1.05; letter-spacing:-1px; margin-bottom:24px; }
+  .hero h1 .line1 { color:var(--white); display:block; }
+  .hero h1 .line2 { color:var(--red); display:block; text-shadow:0 0 40px rgba(232,39,26,0.5); }
+
+  .hero-desc { max-width:600px; color:var(--white2); font-size:16px; line-height:1.8; margin-bottom:40px; }
+
+  .hero-stats { display:flex; gap:40px; flex-wrap:wrap; justify-content:center; margin-bottom:40px; }
+  .stat { text-align:center; }
+  .stat-num { font-family:'Oswald',sans-serif; font-size:36px; font-weight:700; color:var(--red); display:block; line-height:1; }
+  .stat-label { font-size:11px; color:var(--white3); letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+
+  .hero-scroll { font-family:'Roboto Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--white3); text-transform:uppercase; margin-top:20px; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* ── NAV ── */
+  .chapter-nav { position:sticky; top:3px; z-index:500; background:rgba(10,10,10,0.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--border2); padding:0 20px; overflow-x:auto; scrollbar-width:none; }
+  .chapter-nav::-webkit-scrollbar { display:none; }
+  .nav-inner { display:flex; gap:0; max-width:1100px; margin:0 auto; white-space:nowrap; }
+  .nav-item { padding:14px 18px; font-family:'Roboto Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--white3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; text-decoration:none; display:block; }
+  .nav-item:hover, .nav-item.active { color:var(--red); border-bottom-color:var(--red); }
+
+  /* ── LAYOUT ── */
+  .container { max-width:1000px; margin:0 auto; padding:0 24px; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider { padding:48px 24px 0; display:flex; align-items:center; gap:20px; max-width:1000px; margin:0 auto; }
+  .div-num { font-family:'Oswald',sans-serif; font-size:80px; font-weight:700; color:rgba(232,39,26,0.08); line-height:1; flex-shrink:0; }
+  .div-title { font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:3px; color:var(--red); text-transform:uppercase; margin-bottom:4px; }
+  .div-sub { font-size:13px; color:var(--white3); }
+
+  /* ── CHAPTER ── */
+  .chapter { padding:80px 0 40px; border-bottom:1px solid var(--border2); }
+  .chapter:last-of-type { border-bottom:none; }
+
+  .ch-eyebrow { font-family:'Roboto Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--red); text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+  .ch-eyebrow::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--red-dim),transparent); }
+
+  .ch-title { font-family:'Oswald',sans-serif; font-size:clamp(28px,5vw,48px); font-weight:600; line-height:1.1; margin-bottom:16px; color:var(--white); }
+  .ch-title span { color:var(--red); }
+  .ch-subtitle { color:var(--white3); font-size:14px; max-width:640px; margin-bottom:48px; line-height:1.7; }
+
+  /* ── BLOCKS ── */
+  .block { background:var(--bg2); border:1px solid var(--border2); border-radius:6px; padding:28px 32px; margin-bottom:20px; position:relative; overflow:hidden; }
+  .block::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--red); }
+  .block.gold::before { background:var(--gold); }
+  .block.blue::before { background:var(--blue); }
+  .block.green::before { background:var(--green); }
+  .block.subtle::before { background:var(--border2); }
+
+  .block-title { font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; color:var(--white); margin-bottom:14px; letter-spacing:0.3px; }
+  .block-title .num { color:var(--red); font-family:'Roboto Mono',monospace; font-size:12px; margin-right:8px; }
+
+  /* ── CHECKLIST OPERATIONAL (inline) ── */
+  .op-checklist { list-style:none; margin-top:10px; }
+  .op-checklist li { padding:10px 0; border-bottom:1px solid var(--border2); font-size:14px; color:var(--white2); display:flex; align-items:flex-start; gap:12px; }
+  .op-checklist li:last-child { border-bottom:none; }
+  .op-checklist li .ck-num { font-family:'Roboto Mono',monospace; font-size:11px; color:var(--red); min-width:26px; padding-top:2px; }
+  .op-checklist li .ck-text { flex:1; }
+  .op-checklist li .ck-tag { font-family:'Roboto Mono',monospace; font-size:10px; padding:2px 8px; border-radius:2px; flex-shrink:0; margin-top:2px; }
+  .ck-must { background:var(--red-glow); border:1px solid var(--border); color:var(--red); }
+  .ck-safe { background:var(--green-glow); border:1px solid rgba(123,198,126,0.3); color:var(--green); }
+  .ck-note { background:rgba(212,168,83,0.1); border:1px solid var(--gold-dim); color:var(--gold); }
+
+  /* ── TIME BLOCKS ── */
+  .time-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-top:8px; }
+  .time-card { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:22px; }
+  .time-card.open-card { border-top:2px solid var(--green); }
+  .time-card.close-card { border-top:2px solid var(--blue); }
+  .time-card.mid-card { border-top:2px solid var(--gold); }
+  .time-label { font-family:'Roboto Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; display:block; }
+  .time-label.open { color:var(--green); }
+  .time-label.close { color:var(--blue); }
+  .time-label.mid { color:var(--gold); }
+  .time-title { font-family:'Oswald',sans-serif; font-size:18px; font-weight:600; color:var(--white); margin-bottom:8px; }
+  .time-body { font-size:13px; color:var(--white2); line-height:1.7; }
+
+  /* ── FLOW STEPS ── */
+  .flow-steps { display:flex; flex-direction:column; gap:0; margin-top:8px; }
+  .flow-item { display:flex; gap:20px; align-items:flex-start; padding:20px 0; border-bottom:1px solid var(--border2); position:relative; }
+  .flow-item:last-child { border-bottom:none; }
+  .flow-num { font-family:'Oswald',sans-serif; font-size:40px; font-weight:700; color:var(--red-dim); line-height:1; min-width:50px; position:relative; }
+  .flow-num::after { content:''; position:absolute; right:-10px; top:0; bottom:0; width:1px; background:var(--border2); }
+  .flow-content { flex:1; }
+  .flow-title { font-family:'Oswald',sans-serif; font-size:18px; color:var(--white); margin-bottom:8px; font-weight:600; }
+  .flow-body { font-size:14px; color:var(--white2); line-height:1.7; margin-bottom:12px; }
+
+  /* ── TABLE ── */
+  .data-table { width:100%; border-collapse:collapse; margin-top:8px; }
+  .data-table th { background:var(--bg3); color:var(--red); font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:1px; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  .data-table td { padding:11px 14px; font-size:14px; border-bottom:1px solid var(--border2); vertical-align:top; color:var(--white2); }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:var(--bg3); }
+  .td-red { color:var(--red) !important; font-weight:500; }
+  .td-gold { color:var(--gold) !important; }
+  .td-green { color:var(--green) !important; }
+
+  /* ── COMPARE ── */
+  .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
+  .compare-card { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:18px 20px; }
+  .compare-card.bad { border-top:2px solid #e8831a; }
+  .compare-card.good { border-top:2px solid var(--green); }
+  .compare-tag { font-family:'Roboto Mono',monospace; font-size:10px; letter-spacing:2px; margin-bottom:10px; display:block; }
+  .tag-bad { color:#e8831a; }
+  .tag-good { color:var(--green); }
+  .compare-card p { font-size:13px; color:var(--white2); line-height:1.7; }
+  .compare-card ul { list-style:none; }
+  .compare-card ul li { font-size:13px; color:var(--white2); line-height:1.7; padding:5px 0; border-bottom:1px solid var(--border2); display:flex; align-items:flex-start; gap:8px; }
+  .compare-card ul li:last-child { border-bottom:none; }
+  .compare-card.bad ul li { color:#888; }
+  .compare-card ul li::before { content:''; font-size:11px; margin-top:4px; flex-shrink:0; }
+  .compare-card.bad ul li::before { content:'✕'; color:#e8831a; }
+  .compare-card.good ul li::before { content:'✓'; color:var(--green); }
+
+  /* ── TIP/WARN BOXES ── */
+  .tip-box { background:rgba(212,168,83,0.07); border-left:3px solid var(--gold); padding:16px 20px; border-radius:0 5px 5px 0; margin:16px 0; font-size:14px; color:var(--white2); }
+  .tip-box strong { color:var(--gold); }
+  .warn-box { background:rgba(232,131,26,0.08); border-left:3px solid #e8831a; padding:16px 20px; border-radius:0 5px 5px 0; margin:16px 0; font-size:14px; color:var(--white2); }
+  .warn-box strong { color:#e8831a; }
+  .red-box { background:var(--red-glow); border-left:3px solid var(--red); padding:16px 20px; border-radius:0 5px 5px 0; margin:16px 0; font-size:14px; color:var(--white2); }
+  .red-box strong { color:var(--red2); }
+  .green-box { background:var(--green-glow); border-left:3px solid var(--green); padding:16px 20px; border-radius:0 5px 5px 0; margin:16px 0; font-size:14px; color:var(--white2); }
+  .green-box strong { color:var(--green); }
+
+  /* ── TAG PILLS ── */
+  .tag-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .tag { font-size:12px; padding:4px 12px; border-radius:3px; font-family:'Roboto Mono',monospace; letter-spacing:0.5px; }
+  .tag-r { background:var(--red-glow); border:1px solid var(--border); color:var(--red2); }
+  .tag-g { background:var(--green-glow); border:1px solid rgba(123,198,126,0.3); color:var(--green); }
+  .tag-w { background:rgba(255,255,255,0.05); border:1px solid var(--border2); color:var(--white2); }
+  .tag-gold { background:rgba(212,168,83,0.1); border:1px solid var(--gold-dim); color:var(--gold); }
+
+  /* ── EMERGENCY CARDS ── */
+  .emergency-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-top:8px; }
+  .emergency-card { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:22px; border-left:3px solid var(--red); }
+  .emergency-card.warn-card { border-left-color:#e8831a; }
+  .emergency-card.gold-card { border-left-color:var(--gold); }
+  .e-icon { font-size:24px; margin-bottom:8px; display:block; }
+  .e-name { font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; color:var(--white); margin-bottom:6px; }
+  .e-steps { list-style:none; margin-top:8px; }
+  .e-steps li { font-size:13px; color:var(--white2); line-height:1.6; padding:5px 0; border-bottom:1px solid var(--border2); display:flex; gap:10px; }
+  .e-steps li:last-child { border-bottom:none; }
+  .e-steps li .step-n { font-family:'Roboto Mono',monospace; font-size:10px; color:var(--red); min-width:20px; padding-top:3px; }
+  .emergency-card.warn-card .e-steps li .step-n { color:#e8831a; }
+  .emergency-card.gold-card .e-steps li .step-n { color:var(--gold); }
+
+  /* ── DAILY LOG ── */
+  .log-form { background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:24px; margin-top:8px; }
+  .log-form-title { font-family:'Oswald',sans-serif; font-size:16px; color:var(--white); margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+  .log-form-title::after { content:''; flex:1; height:1px; background:var(--border2); }
+  .log-row { display:grid; grid-template-columns:160px 1fr; gap:12px; margin-bottom:12px; align-items:center; }
+  .log-label { font-family:'Roboto Mono',monospace; font-size:11px; color:var(--white3); letter-spacing:1px; }
+  .log-field { background:var(--bg4); border:1px solid var(--border2); border-radius:3px; padding:8px 12px; font-size:13px; color:var(--white2); width:100%; font-family:'Noto Sans SC',sans-serif; resize:none; }
+  .log-field:focus { outline:none; border-color:var(--red); }
+
+  /* ── TRACKER ── */
+  .tracker-section { background:var(--bg2); border-top:2px solid var(--red); padding:60px 0; margin-top:40px; }
+  .tracker-title { font-family:'Oswald',sans-serif; font-size:28px; text-align:center; margin-bottom:8px; color:var(--white); }
+  .tracker-sub { text-align:center; color:var(--white3); font-size:13px; margin-bottom:36px; }
+  .tracker-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .tracker-item { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.2s; user-select:none; }
+  .tracker-item:hover { border-color:var(--red); }
+  .tracker-item.checked { border-color:var(--red); background:var(--red-glow); }
+  .tracker-check { width:22px; height:22px; border-radius:4px; border:2px solid var(--white3); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; transition:all 0.2s; }
+  .tracker-item.checked .tracker-check { background:var(--red); border-color:var(--red); color:white; }
+  .tracker-text { font-size:13px; color:var(--white2); line-height:1.5; }
+  .tracker-item.checked .tracker-text { color:var(--white); }
+  .tracker-progress-bar { max-width:400px; margin:30px auto 0; background:var(--bg3); border-radius:4px; height:6px; overflow:hidden; }
+  .tracker-progress-fill { height:100%; background:linear-gradient(90deg,var(--red),var(--red2)); width:0%; transition:width 0.3s; }
+  .tracker-progress-label { text-align:center; margin-top:10px; font-family:'Roboto Mono',monospace; font-size:12px; color:var(--white3); }
+
+  /* ── FOOTER ── */
+  .footer { background:var(--bg); border-top:1px solid var(--border2); padding:60px 24px; text-align:center; }
+  .footer-title { font-family:'Oswald',sans-serif; font-size:22px; color:var(--white); margin-bottom:10px; }
+  .footer-title span { color:var(--red); }
+  .footer p { font-size:13px; color:var(--white3); }
+
+  /* ── SCORE BOARD ── */
+  .score-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:8px; }
+  .score-card { background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:16px; text-align:center; }
+  .score-num { font-family:'Oswald',sans-serif; font-size:40px; font-weight:700; color:var(--red); line-height:1; }
+  .score-num.gold { color:var(--gold); }
+  .score-num.green { color:var(--green); }
+  .score-unit { font-size:13px; color:var(--white3); margin-top:4px; }
+  .score-label { font-size:12px; color:var(--white2); margin-top:8px; }
+
+  @media(max-width:600px) {
+    .compare-grid { grid-template-columns:1fr; }
+    .log-row { grid-template-columns:1fr; }
+    .flow-num { font-size:28px; min-width:36px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="progress-label">0%</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="stage-badge">运营培训系统 · Stage 02 of 22</div>
+  <h1>
+    <span class="line1">开关馆流程</span>
+    <span class="line2">& 场地日常运维</span>
+  </h1>
+  <p class="hero-desc">
+    开馆不是"把门打开"，关馆不是"把灯关掉"。<br>
+    这节课把每天必须做的事情系统化，让你的每一天都从零失误开始。
+  </p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">27</span><div class="stat-label">开馆检查项</div></div>
+    <div class="stat"><span class="stat-num">18</span><div class="stat-label">关馆检查项</div></div>
+    <div class="stat"><span class="stat-num">6</span><div class="stat-label">应急处置场景</div></div>
+    <div class="stat"><span class="stat-num">2h</span><div class="stat-label">预计学习时长</div></div>
+  </div>
+  <div class="hero-scroll">↓ 开始学习</div>
+</section>
+
+<!-- NAV -->
+<nav class="chapter-nav">
+  <div class="nav-inner">
+    <a class="nav-item" href="#ch01">01 · 为什么要流程化</a>
+    <a class="nav-item" href="#ch02">02 · 开馆流程</a>
+    <a class="nav-item" href="#ch03">03 · 营业中巡场</a>
+    <a class="nav-item" href="#ch04">04 · 关馆流程</a>
+    <a class="nav-item" href="#ch05">05 · 设备与物资管理</a>
+    <a class="nav-item" href="#ch06">06 · 应急处置</a>
+    <a class="nav-item" href="#ch07">07 · 运营日志</a>
+    <a class="nav-item" href="#checklist">打卡</a>
+  </div>
+</nav>
+
+<!-- CH01 -->
+<div class="section-divider" id="ch01">
+  <div class="div-num">01</div>
+  <div class="div-text">
+    <div class="div-title">为什么要流程化</div>
+    <div class="div-sub">靠记忆不可靠，靠流程才稳定</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 01</div>
+  <div class="ch-title">没有流程，<span>迟早出事</span></div>
+  <p class="ch-subtitle">一个小馆每天要处理的事情，远比你想象的多。当你靠"记忆"和"感觉"来运营，迟早会有东西被漏掉——而那个东西，可能是安全隐患，可能是客户投诉，可能是让管理层不满意的小细节。</p>
+
+  <div class="score-grid">
+    <div class="score-card">
+      <div class="score-num">3</div>
+      <div class="score-unit">次/周</div>
+      <div class="score-label">没有流程的馆平均每周出现的"可避免失误"次数</div>
+    </div>
+    <div class="score-card">
+      <div class="score-num green">90%</div>
+      <div class="score-unit">减少</div>
+      <div class="score-label">标准化流程可以减少的失误比例</div>
+    </div>
+    <div class="score-card">
+      <div class="score-num gold">15</div>
+      <div class="score-unit">分钟</div>
+      <div class="score-label">标准开馆流程从进门到"准备好迎客"所需时间</div>
+    </div>
+    <div class="score-card">
+      <div class="score-num">20</div>
+      <div class="score-unit">分钟</div>
+      <div class="score-label">标准关馆流程从最后一位客人离开到锁门所需时间</div>
+    </div>
+  </div>
+
+  <div class="block" style="margin-top:24px;">
+    <div class="block-title">三类常见失误，都是流程问题</div>
+    <div class="flow-steps">
+      <div class="flow-item" style="padding:14px 0;">
+        <div style="min-width:50px;color:var(--red);font-family:'Roboto Mono',monospace;font-size:11px;padding-top:2px;letter-spacing:1px;">TYPE 01</div>
+        <div class="flow-content">
+          <div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px;">安全隐患未发现</div>
+          <div style="font-size:13px;color:var(--white2);">地板潮湿没擦干、球网高度没调整、灯管有一根坏了但没报修。这些在客人进场前就该发现的问题，因为没有系统化检查流程而被漏掉，最终变成学员受伤或投诉。</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:14px 0;">
+        <div style="min-width:50px;color:var(--gold);font-family:'Roboto Mono',monospace;font-size:11px;padding-top:2px;letter-spacing:1px;">TYPE 02</div>
+        <div class="flow-content">
+          <div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px;">关馆遗漏项</div>
+          <div style="font-size:13px;color:var(--white2);">空调没关、某个门没锁、充电中的设备没拔插头。这些在深夜无人的时候，可能演变成设备损坏、能耗浪费，最严重的是安全事故。</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:14px 0;border-bottom:none;">
+        <div style="min-width:50px;color:var(--green);font-family:'Roboto Mono',monospace;font-size:11px;padding-top:2px;letter-spacing:1px;">TYPE 03</div>
+        <div class="flow-content">
+          <div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px;">物资短缺没发现</div>
+          <div style="font-size:13px;color:var(--white2);">球没了、毛巾用完了、饮料冰箱空了。在客人需要的时候才发现，既影响体验，又让运营员在现场很被动。物资管理应该在固定时间点做盘点。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="green-box">
+    <strong>这节课的目标：</strong>让你把"开馆""关馆""巡场"变成肌肉记忆。第一个月按清单做，第二个月不看清单也能做对，第三个月做完还能发现场馆里哪里可以优化。这就是职业化运营员和普通工作人员的区别。
+  </div>
+</div>
+</div>
+
+<!-- CH02 -->
+<div class="section-divider" id="ch02">
+  <div class="div-num">02</div>
+  <div class="div-text">
+    <div class="div-title">开馆流程</div>
+    <div class="div-sub">开门前15分钟，决定今天的状态</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 02</div>
+  <div class="ch-title">开馆<span>标准流程</span></div>
+  <p class="ch-subtitle">每天开馆前15分钟是黄金时间。这段时间做对了，整个运营日都是有底气的。做漏了，你会在客人进来之后一直处于"补救模式"。</p>
+
+  <div class="block green">
+    <div class="block-title">⏱ 开馆前 15 分钟 · 全流程</div>
+    <ul class="op-checklist">
+      <li><span class="ck-num">01</span><span class="ck-text"><strong style="color:var(--white);">到达 & 开锁</strong> — 提前15分钟到达场馆，检查门锁是否正常，观察门口区域有无异常（垃圾、损坏、可疑物品）</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">02</span><span class="ck-text"><strong style="color:var(--white);">关闭警报系统</strong> — 按照场馆规定的步骤关闭警报，确认密码正确输入。如有异常立刻联系管理层，不要自行处理</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">03</span><span class="ck-text"><strong style="color:var(--white);">开灯 · 全场检查</strong> — 依次开启所有灯光，包括场地灯、洗手间灯、更衣室灯、走廊灯。边开灯边巡视，发现灯管故障立刻记录</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">04</span><span class="ck-text"><strong style="color:var(--white);">空调/通风系统</strong> — 根据季节开启空调或通风系统，夏季提前15分钟开冷气让场内温度降到舒适范围，冬季同理。检查风口无异味</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">05</span><span class="ck-text"><strong style="color:var(--white);">场地地面检查</strong> — 走遍每一片场地，检查地板是否有积水、裂缝、异物（昨晚可能没清理干净的球或设备）。发现积水立刻处理，未处理不能开放该场地</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">06</span><span class="ck-text"><strong style="color:var(--white);">球网高度校准</strong> — 每条球网中心点高度标准为 34 英寸（约86cm），两端为 36 英寸（约91.4cm）。用标尺或标准杆检查，有偏差立刻调整</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">07</span><span class="ck-text"><strong style="color:var(--white);">球拍 & 球盘点</strong> — 清点可外借球拍数量，检查球拍拍面是否完好、握柄是否脱落。清点备用球数量（建议每场地备用6-8个），不足提前补充</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">08</span><span class="ck-text"><strong style="color:var(--white);">洗手间检查</strong> — 检查洗手间供水是否正常，皂液、纸巾、手纸是否充足，地面是否干燥无水迹，有无异味</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">09</span><span class="ck-text"><strong style="color:var(--white);">前台区域整理</strong> — 收银台面整洁，预约本/平板在位，充电设备正常，名片/宣传物料摆放整齐，笔可用</span><span class="ck-tag ck-safe">环境</span></li>
+      <li><span class="ck-num">10</span><span class="ck-text"><strong style="color:var(--white);">饮品区补货</strong> — 检查冷藏柜库存，缺货品类做记录，当日不能补货的做"暂时缺货"标记，避免让客人等待后发现没货</span><span class="ck-tag ck-safe">环境</span></li>
+      <li><span class="ck-num">11</span><span class="ck-text"><strong style="color:var(--white);">查看当日预约</strong> — 打开预约系统或记录本，确认今日预约清单：谁在什么时间、用哪个场地、是上课还是自由打。标注有无VIP客户或新客首次到访</span><span class="ck-tag ck-note">重要</span></li>
+      <li><span class="ck-num">12</span><span class="ck-text"><strong style="color:var(--white);">联系教练确认</strong> — 如今日有课程，提前5分钟通知教练（微信即可）：今天第一节课几点、谁来、场地几号。教练有变动要提前处理，不能临时告知客人</span><span class="ck-tag ck-note">重要</span></li>
+      <li><span class="ck-num">13</span><span class="ck-text"><strong style="color:var(--white);">昨日遗留问题处理</strong> — 翻看运营日志，昨天有没有记录需要跟进的问题（设备报修、客人投诉、物资采购）。今天开馆前完成能处理的，不能处理的再次记录时间节点</span><span class="ck-tag ck-note">重要</span></li>
+      <li><span class="ck-num">14</span><span class="ck-text"><strong style="color:var(--white);">音乐/背景音</strong> — 根据场馆风格和当天时间开启背景音乐，音量以不影响对话为准（建议35-45分贝）。早场安静为主，晚场活跃时间可稍高</span><span class="ck-tag ck-safe">环境</span></li>
+    </ul>
+  </div>
+
+  <div class="tip-box">
+    <strong>效率技巧：</strong>把这14项做成手机备忘录清单，或者打印贴在后台工作区。开馆前逐项打钩，全部打完才能开门迎客。不要靠记忆——你很可能因为前一晚没睡好、或者早上赶时间，漏掉一两项。
+  </div>
+
+  <div class="block" style="margin-top:24px;">
+    <div class="block-title">开馆前最容易漏的 5 件事</div>
+    <table class="data-table">
+      <tr>
+        <th>漏掉的项目</th>
+        <th>后果</th>
+        <th>预防方法</th>
+      </tr>
+      <tr>
+        <td class="td-red">球网高度没检查</td>
+        <td style="color:var(--white3);">客人打了半小时，发现高度不对，影响训练效果和体验感</td>
+        <td class="td-gold">用专用网高测量杆，每次开馆必测一遍，2分钟内完成</td>
+      </tr>
+      <tr>
+        <td class="td-red">没看当日预约</td>
+        <td style="color:var(--white3);">客人来了，场地被占用；或者准备了2人的场地，来了4人</td>
+        <td class="td-gold">开馆流程第11项，必须在迎客前完成</td>
+      </tr>
+      <tr>
+        <td class="td-red">空调没提前开</td>
+        <td style="color:var(--white3);">夏天客人进来闷热，前10分钟的体验极差</td>
+        <td class="td-gold">进门第一件事就开空调，后面做其他检查的时候空调在预热/预冷</td>
+      </tr>
+      <tr>
+        <td class="td-red">备用球不足</td>
+        <td style="color:var(--white3);">多组人同时打球时球不够用，临时去找显得很不专业</td>
+        <td class="td-gold">设置库存红线（每场地低于4个即补货），每天开馆时清点</td>
+      </tr>
+      <tr>
+        <td class="td-red">洗手间纸巾用完</td>
+        <td style="color:var(--white3);">客人使用时发现，尴尬且影响口碑</td>
+        <td class="td-gold">开馆巡视时必走一遍洗手间，发现不足当场补充</td>
+      </tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- CH03 -->
+<div class="section-divider" id="ch03">
+  <div class="div-num">03</div>
+  <div class="div-text">
+    <div class="div-title">营业中巡场</div>
+    <div class="div-sub">睁眼看场馆，用耳朵感知现场</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 03</div>
+  <div class="ch-title">营业中的<span>巡场节奏</span></div>
+  <p class="ch-subtitle">巡场不是闲逛，不是监视，而是"主动感知场馆状态"。一个好的运营员在场馆里待着，客人会感觉有人在管，但不觉得被打扰。</p>
+
+  <div class="time-grid">
+    <div class="time-card open-card">
+      <span class="time-label open">// 每 30 分钟</span>
+      <div class="time-title">快速巡视</div>
+      <div class="time-body">
+        绕场一圈，重点检查：<br>
+        · 场地地面有无积水或杂物<br>
+        · 球网是否被碰歪<br>
+        · 客人是否有需求（水、拍子、问题）<br>
+        · 洗手间有无异常<br>
+        走完一圈约3-5分钟，不打扰正在打球的人。
+      </div>
+    </div>
+    <div class="time-card mid-card">
+      <span class="time-label mid">// 每 2 小时</span>
+      <div class="time-title">设备检查</div>
+      <div class="time-body">
+        · 空调温度是否在舒适范围（冬季20-22°C，夏季24-26°C）<br>
+        · 场地灯光有无闪烁、损坏<br>
+        · 饮品区库存是否需要补充<br>
+        · 前台充电设备、对讲机是否正常<br>
+        记录发现的问题，不能当场处理的写进日志。
+      </div>
+    </div>
+    <div class="time-card close-card">
+      <span class="time-label close">// 课程节点</span>
+      <div class="time-title">课前课后确认</div>
+      <div class="time-body">
+        每节课开始前5分钟：<br>
+        · 场地是否整理好<br>
+        · 教练和学员是否都到位<br>
+        · 球和球拍是否备好<br><br>
+        每节课结束后：<br>
+        · 提醒学员携带个人物品<br>
+        · 重置场地（球归位、网高检查）<br>
+        · 询问家长/学员有无反馈
+      </div>
+    </div>
+  </div>
+
+  <div class="block" style="margin-top:24px;">
+    <div class="block-title">巡场时的观察维度</div>
+    <p style="color:var(--white2);font-size:14px;line-height:1.8;margin-bottom:16px;">
+      专业的巡场不只是"看有没有问题"，而是有目标地扫描以下五个维度：
+    </p>
+    <div class="flow-steps">
+      <div class="flow-item" style="padding:16px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">👁</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">看 · 视觉扫描</div>
+          <div style="font-size:13px;color:var(--white2);">地面干净度、设备完整度、灯光状态、场地有无闲置或浪费、有无客人在等待无人照应</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:16px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--gold-dim);min-width:50px;line-height:1;">👂</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">听 · 声音感知</div>
+          <div style="font-size:13px;color:var(--white2);">有无设备异响（空调嗡嗡声、灯管噪音）、有无客人争论声音、孩子是否在哭或情绪激动、是否有东西摔落的声音</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:16px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--blue-glow,#1a3a4a);min-width:50px;line-height:1;filter:brightness(3);">🌡</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">感 · 温度与气味</div>
+          <div style="font-size:13px;color:var(--white2);">场馆温度是否舒适（打球后会热，但不能让人觉得憋闷）；有无异味（汗味积累、厕所回气、设备过热的焦糊味）</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:16px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--gold-dim);min-width:50px;line-height:1;">🤝</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">读 · 人的状态</div>
+          <div style="font-size:13px;color:var(--white2);">谁在等场、谁在休息、家长是不是面露不耐烦、学员打完是开心还是有挫败感。这些是服务介入的时机，也是后续跟进的信号</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:16px 0;border-bottom:none;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">📋</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">记 · 发现问题立刻记录</div>
+          <div style="font-size:13px;color:var(--white2);">发现任何需要跟进的事情，立刻用手机或便签记下来。不要依赖记忆。"我一会儿记"等于"我忘了"。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong>常见问题：</strong>很多运营员巡场时会走进场地和打球的人聊起来，结果聊了10分钟才出来，前台没人、其他客人有问题找不到人。巡场是"感知"不是"交际"——保持移动状态，有需要再停下来。
+  </div>
+</div>
+</div>
+
+<!-- CH04 -->
+<div class="section-divider" id="ch04">
+  <div class="div-num">04</div>
+  <div class="div-text">
+    <div class="div-title">关馆流程</div>
+    <div class="div-sub">把今天收好，才能开好明天</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 04</div>
+  <div class="ch-title">关馆<span>标准流程</span></div>
+  <p class="ch-subtitle">关馆的核心是两件事：第一，安全确认（没有人、没有火灾隐患、没有漏水）；第二，次日准备（让明天开馆可以比今天更顺）。</p>
+
+  <div class="tip-box" style="margin-bottom:24px;">
+    <strong>关馆时间节点：</strong>最后一位客人离开后，正式启动关馆流程。不要在客人还在的时候开始关灯、搬椅子，这是非常不礼貌的行为，会让客人感觉"在赶我走"。等客人全部离开，再有条不紊地执行关馆清单。
+  </div>
+
+  <div class="block blue">
+    <div class="block-title">🔒 关馆流程 · 全清单（约20分钟）</div>
+
+    <p style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:2px;margin-bottom:16px;text-transform:uppercase;">— 第一阶段：送别确认（5分钟）—</p>
+    <ul class="op-checklist" style="margin-bottom:24px;">
+      <li><span class="ck-num">01</span><span class="ck-text">确认场馆内无遗留人员 — 逐一走过所有场地、洗手间、更衣室、储物间，确认无人</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">02</span><span class="ck-text">检查遗留物品 — 查看更衣室、座位区、场边是否有客人遗忘的物品（手机、钥匙、外套、球拍）。发现后拍照记录，放入失物招领区，通过微信通知当日客人</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">03</span><span class="ck-text">当日预约核对 — 确认今日所有预约均已完成，有无爽约未记录、有无临时加场未登记</span><span class="ck-tag ck-note">重要</span></li>
+    </ul>
+
+    <p style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:2px;margin-bottom:16px;text-transform:uppercase;">— 第二阶段：场地整理（8分钟）—</p>
+    <ul class="op-checklist" style="margin-bottom:24px;">
+      <li><span class="ck-num">04</span><span class="ck-text">回收所有球拍 & 球 — 把散落在场地各处的球统一回收至球筐，外借球拍全部归还至前台。检查球拍有无新增损坏，损坏的做标记明日报修</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">05</span><span class="ck-text">清洁场地地面 — 用拖把或干湿两用清洁设备清洁每片场地。重点清洁边线附近（球容易撞到边缘后留下痕迹）和球网柱底部</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">06</span><span class="ck-text">球网归位 — 检查球网是否完好，网杆是否稳固，有无松动。长期不收的球网保持标准张力，避免松弛变形</span><span class="ck-tag ck-safe">设备</span></li>
+      <li><span class="ck-num">07</span><span class="ck-text">座椅 & 边桌复位 — 把移动过的椅子、边桌归回原位，保持场馆整洁，方便明天开馆一眼看清布局</span><span class="ck-tag ck-safe">环境</span></li>
+      <li><span class="ck-num">08</span><span class="ck-text">垃圾桶清空 — 清空所有区域垃圾桶（场地旁、前台、洗手间），换上新垃圾袋。不要留到明天开馆再清</span><span class="ck-tag ck-must">必做</span></li>
+    </ul>
+
+    <p style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:2px;margin-bottom:16px;text-transform:uppercase;">— 第三阶段：设备关闭（5分钟）—</p>
+    <ul class="op-checklist" style="margin-bottom:24px;">
+      <li><span class="ck-num">09</span><span class="ck-text">关闭空调 & 通风 — 关闭所有空调，检查出风口无异物堵塞。夏季关馆时室内温度可以稍高，不需要等空调把室温降到正常再关</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">10</span><span class="ck-text">关闭场地灯 — 按顺序依次关闭各场地灯光，最后关公共区域灯，保留一盏工作灯用于完成剩余关馆工作</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">11</span><span class="ck-text">关闭饮品冷柜 — 注意：冷藏柜通常不完全断电，调整至节能模式（根据品牌说明书操作），不要直接拔插头导致设备损坏</span><span class="ck-tag ck-note">注意</span></li>
+      <li><span class="ck-num">12</span><span class="ck-text">充电设备处理 — 确认对讲机、平板、收银设备等已接上充电，保证明天开馆有电可用。不在充电的设备确认关机或待机</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">13</span><span class="ck-text">关闭音响 & 背景音乐设备 — 包括功放、蓝牙音响等。确认设备处于完全关机状态，非待机</span><span class="ck-tag ck-safe">设备</span></li>
+    </ul>
+
+    <p style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:2px;margin-bottom:16px;text-transform:uppercase;">— 第四阶段：安全确认 & 锁门（2分钟）—</p>
+    <ul class="op-checklist">
+      <li><span class="ck-num">14</span><span class="ck-text">用水区关闭 — 检查洗手间水龙头全部关闭，检查拖把池水龙头关闭，饮品机水源关闭</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">15</span><span class="ck-text">门窗检查 — 检查所有窗户关闭锁好，侧门/后门关闭上锁，不让任何出入口处于未锁状态</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">16</span><span class="ck-text">撤出 & 开启警报系统 — 按设定程序开启警报，确认屏幕显示"armed"或对应状态后，在规定时间内退出场馆</span><span class="ck-tag ck-must">必做</span></li>
+      <li><span class="ck-num">17</span><span class="ck-text">锁大门 & 拍照记录 — 锁好大门后，用手机拍一张锁门状态照片，时间戳自动记录。这是万一出现争议时的最有效保护</span><span class="ck-tag ck-note">建议</span></li>
+      <li><span class="ck-num">18</span><span class="ck-text">完成运营日志 — 关馆前5分钟完成当日运营日志：到馆人数、预约执行情况、发现问题、次日注意事项</span><span class="ck-tag ck-must">必做</span></li>
+    </ul>
+  </div>
+
+  <div class="red-box">
+    <strong>关馆最重要的一条：</strong>不管多晚、多累，锁门前必须完整走一遍"无人确认"。历史上有场馆锁门后发现里面还有人（更衣室睡着了、孩子躲着玩），这是严重安全事故。这一项无论如何不能跳过。
+  </div>
+</div>
+</div>
+
+<!-- CH05 -->
+<div class="section-divider" id="ch05">
+  <div class="div-num">05</div>
+  <div class="div-text">
+    <div class="div-title">设备与物资管理</div>
+    <div class="div-sub">不够用的时候才发现，已经太晚</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 05</div>
+  <div class="ch-title">物资管理<span>不靠感觉</span></div>
+  <p class="ch-subtitle">物资管理的核心原则是：在"快用完"的时候补，而不是"用完了"才补。这需要建立库存红线制度。</p>
+
+  <div class="block gold">
+    <div class="block-title">核心物资库存红线参考</div>
+    <table class="data-table">
+      <tr>
+        <th>物资类别</th>
+        <th>建议库存量</th>
+        <th>补货红线</th>
+        <th>补货周期</th>
+      </tr>
+      <tr>
+        <td class="td-red">匹克球（室内球）</td>
+        <td style="color:var(--white2);">每场地8-10个</td>
+        <td class="td-gold">低于4个/场地时补货</td>
+        <td style="color:var(--white3);">按需，通常每2-3周</td>
+      </tr>
+      <tr>
+        <td class="td-red">外借球拍</td>
+        <td style="color:var(--white2);">2-4把/场地</td>
+        <td class="td-gold">发现损坏立刻报修</td>
+        <td style="color:var(--white3);">损耗后替换</td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue);">毛巾/擦汗布</td>
+        <td style="color:var(--white2);">备用20条以上</td>
+        <td class="td-gold">低于8条时洗涤/补充</td>
+        <td style="color:var(--white3);">每日清洗，每周盘点</td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue);">饮用水/饮品</td>
+        <td style="color:var(--white2);">根据场馆容量</td>
+        <td class="td-gold">低于当日预计消耗30%补货</td>
+        <td style="color:var(--white3);">每2-3天盘点</td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue);">厕纸/皂液</td>
+        <td style="color:var(--white2);">备用2-3套</td>
+        <td class="td-gold">剩最后1套立刻补采</td>
+        <td style="color:var(--white3);">每日检查</td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue);">清洁用品（拖把/消毒水）</td>
+        <td style="color:var(--white2);">1套备用</td>
+        <td class="td-gold">主要用品低于半量时补充</td>
+        <td style="color:var(--white3);">每月盘点</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="block" style="margin-top:20px;">
+    <div class="block-title">设备报修流程</div>
+    <div class="flow-steps">
+      <div class="flow-item" style="padding:14px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">01</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">发现问题 · 立刻隔离</div>
+          <div style="font-size:13px;color:var(--white2);">发现设备故障，第一步是隔离——把问题区域/设备标出"暂停使用"，防止客人继续使用受损设备或走进问题场地。用锥形桶、胶带或手写告示均可，关键是立刻做。</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:14px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">02</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">记录 · 拍照存档</div>
+          <div style="font-size:13px;color:var(--white2);">用手机拍摄问题照片（清晰、包含周围环境），截图时间戳。记录：问题描述、发现时间、发现人、当前隔离状态。这些是后续报修和责任确认的依据。</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:14px 0;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">03</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">上报 · 给出时间预期</div>
+          <div style="font-size:13px;color:var(--white2);">通过微信或电话告知管理层，附上照片和描述。如果是影响运营的紧急问题，需注明"影响XX场地今日使用"。让管理层做决定，运营员不要自行决定修或不修。</div>
+        </div>
+      </div>
+      <div class="flow-item" style="padding:14px 0;border-bottom:none;">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;color:var(--red-dim);min-width:50px;line-height:1;">04</div>
+        <div class="flow-content">
+          <div class="flow-title" style="font-size:16px;">跟进 · 闭环确认</div>
+          <div style="font-size:13px;color:var(--white2);">在运营日志中记录报修时间，每天关馆时更新状态（已修复/等待维修/临时方案）。修复后记录完成时间。这份记录不只是备忘，也是场馆运维质量的数据。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- CH06 -->
+<div class="section-divider" id="ch06">
+  <div class="div-num">06</div>
+  <div class="div-text">
+    <div class="div-title">应急处置</div>
+    <div class="div-sub">不慌不乱，按步骤来</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 06</div>
+  <div class="ch-title">六种<span>应急场景</span>处置手册</div>
+  <p class="ch-subtitle">应急情况最考验运营员的专业度。出事的时候，客人看的不只是"结果怎样"，还看"这个人慌不慌、靠不靠得住"。稳住，按流程来。</p>
+
+  <div class="emergency-grid">
+
+    <div class="emergency-card">
+      <span class="e-icon">🤕</span>
+      <div class="e-name">学员受伤</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>立刻停止附近场地的活动，避免二次伤害</li>
+        <li><span class="step-n">02</span>询问伤者状态，不要随意移动（尤其头颈部伤）</li>
+        <li><span class="step-n">03</span>轻伤（擦伤、扭伤）：取急救包处理，记录情况</li>
+        <li><span class="step-n">04</span>严重伤情（无法站立、头部撞击）：立刻拨打120，同时联系管理层</li>
+        <li><span class="step-n">05</span>家长不在现场的：第一时间联系家长，不要拖延</li>
+        <li><span class="step-n">06</span>事后填写事故记录表，保存现场照片</li>
+      </ul>
+    </div>
+
+    <div class="emergency-card warn-card">
+      <span class="e-icon">🔥</span>
+      <div class="e-name">火灾 / 烟雾报警</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>听到报警，立刻停止一切活动，不要观望</li>
+        <li><span class="step-n">02</span>大声通知所有人撤离，指向最近安全出口</li>
+        <li><span class="step-n">03</span>撤离时不要乘电梯（如有），不要返回取物</li>
+        <li><span class="step-n">04</span>在安全距离外清点人数，确认无遗漏</li>
+        <li><span class="step-n">05</span>确认无法控制的火情：拨打119，告知地址</li>
+        <li><span class="step-n">06</span>等待消防到来，不要让任何人重新进入</li>
+      </ul>
+    </div>
+
+    <div class="emergency-card gold-card">
+      <span class="e-icon">⚡</span>
+      <div class="e-name">突然断电</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>保持冷静，立刻开启手机手电筒照明</li>
+        <li><span class="step-n">02</span>安抚现场客人，告知情况正在处理</li>
+        <li><span class="step-n">03</span>检查是否是空气开关跳闸（通常在配电箱）</li>
+        <li><span class="step-n">04</span>联系管理层，报告情况，等待指示</li>
+        <li><span class="step-n">05</span>如断电超过15分钟影响运营，主动告知客人并协商补偿方案</li>
+        <li><span class="step-n">06</span>恢复供电后检查设备有无异常，确认安全再开放</li>
+      </ul>
+    </div>
+
+    <div class="emergency-card">
+      <span class="e-icon">💧</span>
+      <div class="e-name">漏水 / 积水</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>立刻关闭积水场地，放置警示锥或告示</li>
+        <li><span class="step-n">02</span>查找漏水来源（天花板、管道、窗户），不要自行维修</li>
+        <li><span class="step-n">03</span>拍照记录漏水范围和来源，联系管理层</li>
+        <li><span class="step-n">04</span>用拖把控制地面积水，防止人员滑倒</li>
+        <li><span class="step-n">05</span>告知受影响客人，协调换用其他场地或改期</li>
+        <li><span class="step-n">06</span>在问题彻底解决前，该场地持续关闭</li>
+      </ul>
+    </div>
+
+    <div class="emergency-card warn-card">
+      <span class="e-icon">😤</span>
+      <div class="e-name">客人激烈投诉</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>把客人引导至安静区域，避免在其他客人面前升级</li>
+        <li><span class="step-n">02</span>保持冷静、不争辩，先让他说完</li>
+        <li><span class="step-n">03</span>说"我理解您的感受，我们来把这件事弄清楚"</li>
+        <li><span class="step-n">04</span>询问具体情况，确认事实，不做承诺</li>
+        <li><span class="step-n">05</span>告知"我现在联系负责人，5分钟内给您答复"，当面拨打管理层</li>
+        <li><span class="step-n">06</span>全程记录客人反映的问题，事后存档</li>
+      </ul>
+    </div>
+
+    <div class="emergency-card gold-card">
+      <span class="e-icon">🏃</span>
+      <div class="e-name">儿童走失 / 无人认领</div>
+      <ul class="e-steps">
+        <li><span class="step-n">01</span>孩子独自在场馆内无家长，超过10分钟且联系不上 — 启动确认流程</li>
+        <li><span class="step-n">02</span>询问孩子家长姓名、联系电话，用场馆记录核对</li>
+        <li><span class="step-n">03</span>在不惊吓孩子的前提下，让孩子留在前台视野内</li>
+        <li><span class="step-n">04</span>拨打登记的家长号码，无人接听则联系紧急联系人</li>
+        <li><span class="step-n">05</span>30分钟内无法联系家长，联系管理层并视情况报警</li>
+        <li><span class="step-n">06</span>全程保持孩子情绪稳定，不要在孩子面前表现慌乱</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="red-box" style="margin-top:24px;">
+    <strong>应急处置的核心原则：</strong>① 先保人，后保物 ② 不要自行决定超出职责范围的事，第一时间联系管理层 ③ 全程记录，有照片、有时间节点 ④ 在客人面前永远保持冷静，你的情绪是现场最重要的稳定剂
+  </div>
+</div>
+</div>
+
+<!-- CH07 -->
+<div class="section-divider" id="ch07">
+  <div class="div-num">07</div>
+  <div class="div-text">
+    <div class="div-title">运营日志</div>
+    <div class="div-sub">每天5分钟，积累你的运营数据</div>
+  </div>
+</div>
+<div class="container">
+<div class="chapter">
+  <div class="ch-eyebrow">Chapter 07</div>
+  <div class="ch-title">运营日志<span>怎么写</span></div>
+  <p class="ch-subtitle">运营日志不是"给老板看的汇报"，而是你自己管理场馆的工具。写得好的日志，能让你在一个月后看到规律，在三个月后看到成长。</p>
+
+  <div class="block gold">
+    <div class="block-title">每日运营日志 · 标准模板</div>
+    <div class="log-form">
+      <div class="log-form-title">基础信息</div>
+      <div class="log-row"><div class="log-label">DATE</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">2025 / __ / __　　星期__　　天气：____　　运营员：____</div></div>
+      <div class="log-row"><div class="log-label">开馆时间</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">__ : __ 到馆　　　__ : __ 开门迎客</div></div>
+      <div class="log-row"><div class="log-label">关馆时间</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">__ : __ 最后客人离开　　__ : __ 锁门完成</div></div>
+    </div>
+    <div class="log-form" style="margin-top:16px;">
+      <div class="log-form-title">客流数据</div>
+      <div class="log-row"><div class="log-label">到馆总人数</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">成人 __ 人　　青少年 __ 人　　新客 __ 人</div></div>
+      <div class="log-row"><div class="log-label">课程执行</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">计划 __ 节　　实际完成 __ 节　　取消/改期 __ 节（原因：____）</div></div>
+      <div class="log-row"><div class="log-label">场地使用</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;">高峰时段：____　　空闲时段：____　　满场时间：__ 小时</div></div>
+    </div>
+    <div class="log-form" style="margin-top:16px;">
+      <div class="log-form-title">今日问题 & 跟进</div>
+      <div class="log-row" style="align-items:flex-start;"><div class="log-label" style="padding-top:4px;">设备问题</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;min-height:60px;">（记录发现的设备故障，状态：已报修/待处理）</div></div>
+      <div class="log-row" style="align-items:flex-start;"><div class="log-label" style="padding-top:4px;">客户反馈</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;min-height:60px;">（正面反馈和投诉均记录，注明处理结果）</div></div>
+      <div class="log-row" style="align-items:flex-start;"><div class="log-label" style="padding-top:4px;">明日注意</div><div style="font-size:13px;color:var(--white3);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:8px 12px;min-height:60px;">（提醒自己明天要特别关注的事项、预约情况、物资补充）</div></div>
+    </div>
+  </div>
+
+  <div class="compare-grid" style="margin-top:20px;">
+    <div class="compare-card bad">
+      <span class="compare-tag tag-bad">❌ 写得差的日志</span>
+      <ul>
+        <li>"今天一切正常"</li>
+        <li>"没什么特别的"</li>
+        <li>"来了几个人打球，都走了"</li>
+        <li>一周不写一次</li>
+        <li>只写问题，不写处理结果</li>
+      </ul>
+    </div>
+    <div class="compare-card good">
+      <span class="compare-tag tag-good">✓ 写得好的日志</span>
+      <ul>
+        <li>具体数字：今天来了8人，其中2人新客</li>
+        <li>问题闭环：3号场地灯管闪烁，已拍照上报，等待维修中</li>
+        <li>客户备注：李阿姨问了一下青少年寒假班，可以明天跟进</li>
+        <li>次日提醒：明天下午3点有6人团建，场地提前布置</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box" style="margin-top:20px;">
+    <strong>日志的长期价值：</strong>连续记录一个月的日志，你就能看出：哪个时段客流最多、哪个问题反复出现、哪种客人更容易成为长期会员。这些是任何培训都给不了你的第一手数据，只有你自己能积累。
+  </div>
+</div>
+</div>
+
+<!-- CHECKLIST -->
+<div class="tracker-section" id="checklist">
+  <div class="container">
+    <div class="tracker-title">第02节 <span style="color:var(--red)">完成打卡</span></div>
+    <p class="tracker-sub">勾选你已经真正理解并能独立执行的内容</p>
+    <div class="tracker-grid" id="trackerGrid">
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我能说出为什么运营需要流程化，靠记忆会出什么问题</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我记住了开馆流程的14项，能说出其中最容易被忽略的5项</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道匹克球网的标准高度：中心34英寸，两端36英寸</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道每天开馆前必须"查看当日预约"，并确认教练到位</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我能说出巡场的三个频率节点：每30分钟、每2小时、课程节点</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道巡场的五个观察维度：看、听、感、读、记</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我记住关馆流程分四个阶段，能说出每个阶段的核心任务</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道关馆前必须确认无人，以及为什么这是最重要的一项</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道冷藏柜关馆时不能直接断电，应调至节能模式</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我理解"库存红线制度"，能说出至少3类物资的补货红线</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我能说出设备报修的4步流程：隔离→记录→上报→跟进</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">遇到学员受伤，我知道轻伤和重伤的处理方式不同</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">遇到激烈投诉，我能引导至安静区域并保持冷静，不争辩</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我知道运营日志的4个核心板块：基础信息、客流数据、问题跟进、次日提醒</div>
+      </div>
+      <div class="tracker-item" onclick="toggle(this)">
+        <div class="tracker-check"></div>
+        <div class="tracker-text">我理解运营日志的长期价值，并打算每天坚持填写</div>
+      </div>
+    </div>
+    <div class="tracker-progress-bar">
+      <div class="tracker-progress-fill" id="trackerFill"></div>
+    </div>
+    <div class="tracker-progress-label" id="trackerLabel">0 / 15 完成</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-title">运营培训 第02节 <span>完成</span></div>
+  <p>开关馆流程 & 场地日常运维 · Pickleball Venue Operations Training</p>
+  <p style="margin-top:8px;color:#444;">Stage 02 of 22 · 下一节：预约系统管理 & 场地排期</p>
+</div>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = Math.round((scrollTop / docHeight) * 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = pct + '%';
+  });
+
+  const navItems = document.querySelectorAll('.nav-item');
+  const sections = ['ch01','ch02','ch03','ch04','ch05','ch06','ch07','checklist'];
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && window.scrollY >= el.offsetTop - 120) current = id;
+    });
+    navItems.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+
+  function toggle(el) {
+    el.classList.toggle('checked');
+    el.querySelector('.tracker-check').textContent = el.classList.contains('checked') ? '✓' : '';
+    updateTracker();
+  }
+  function updateTracker() {
+    const total = document.querySelectorAll('.tracker-item').length;
+    const done = document.querySelectorAll('.tracker-item.checked').length;
+    document.getElementById('trackerFill').style.width = (done/total*100) + '%';
+    document.getElementById('trackerLabel').textContent = done + ' / ' + total + ' 完成';
+  }
+</script>
+</body>
+</html>
